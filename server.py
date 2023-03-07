@@ -1,19 +1,22 @@
-import os
-import http.server
-import socketserver
+from flask import Flask, render_template
+from flask_socketio import SocketIO
 
-from http import HTTPStatus
+app = Flask(__name__)
+app.config['SECRET_KEY'] = 'secret!'
+socketio = SocketIO(app)
 
+@app.route('/')
+def index():
+    return render_template('index.html')
 
-class Handler(http.server.SimpleHTTPRequestHandler):
-    def do_GET(self):
-        self.send_response(HTTPStatus.OK)
-        self.end_headers()
-        msg = 'Hello! you requested %s' % (self.path)
-        self.wfile.write(msg.encode())
+@socketio.on('connect')
+def handle_connect():
+    print('Client connected')
 
+@socketio.on('message')
+def handle_message(data):
+    print('Received message:', data)
+    socketio.send('Server received message: ' + data)
 
-port = int(os.getenv('PORT', 80))
-print('Listening on port %s' % (port))
-httpd = socketserver.TCPServer(('', port), Handler)
-httpd.serve_forever()
+if __name__ == '__main__':
+    socketio.run(app)
